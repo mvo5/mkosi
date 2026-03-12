@@ -266,6 +266,27 @@ class Dnf(PackageManager):
         cls.invoke(context, "remove", packages, apivfs=True)
 
     @classmethod
+    def remove_nodeps(cls, context: Context, packages: Sequence[str]) -> None:
+        # Remove shell interpreters last and with --noscripts since rpm
+        # scriptlets need /bin/sh to run.
+        shell_packages = {"bash", "dash", "zsh", "fish"}
+        early = [p for p in packages if p not in shell_packages]
+        late = [p for p in packages if p in shell_packages]
+
+        if early:
+            run(
+                [*rpm_cmd(), "-e", "--nodeps", *early],
+                sandbox=cls.sandbox(context, apivfs=True),
+                env=cls.finalize_environment(context),
+            )
+        if late:
+            run(
+                [*rpm_cmd(), "-e", "--nodeps", "--noscripts", *late],
+                sandbox=cls.sandbox(context, apivfs=True),
+                env=cls.finalize_environment(context),
+            )
+
+    @classmethod
     def sync(cls, context: Context, force: bool, arguments: Sequence[str] = ()) -> None:
         cls.invoke(
             context,

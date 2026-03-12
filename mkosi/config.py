@@ -2107,6 +2107,7 @@ class Config:
     extra_trees: list[ConfigTree]
 
     remove_packages: list[str]
+    remove_packages_nodeps: list[str]
     remove_files: list[str]
     clean_package_metadata: ConfigFeature
     source_date_epoch: Optional[int]
@@ -3130,6 +3131,15 @@ SETTINGS: list[ConfigSetting[Any]] = [
         section="Content",
         parse=config_make_list_parser(delimiter=","),
         help="Remove package from the image OS image after installation",
+    ),
+    ConfigSetting(
+        dest="remove_packages_nodeps",
+        name="RemovePackagesNoDeps",
+        long="--remove-package-nodeps",
+        metavar="PACKAGE",
+        section="Content",
+        parse=config_make_list_parser(delimiter=","),
+        help="Remove package from the image without checking dependencies (rpm -e --nodeps)",
     ),
     ConfigSetting(
         dest="remove_files",
@@ -5784,6 +5794,7 @@ def summary(config: Config) -> str:
                         Extra Trees: {line_join_list(config.extra_trees)}
 
                     Remove Packages: {line_join_list(config.remove_packages)}
+       Remove Packages (no deps): {line_join_list(config.remove_packages_nodeps)}
                        Remove Files: {line_join_list(config.remove_files)}
      Clean Package Manager Metadata: {config.clean_package_metadata}
                   Source Date Epoch: {none_to_none(config.source_date_epoch)}

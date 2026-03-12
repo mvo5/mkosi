@@ -354,6 +354,21 @@ def remove_packages(context: Context) -> None:
             die(f"Removing packages is not supported for {context.config.distribution}")
 
 
+def remove_packages_nodeps(context: Context) -> None:
+    """Remove packages listed in config.remove_packages_nodeps without dependency checks"""
+
+    if not context.config.remove_packages_nodeps:
+        return
+
+    with complete_step(f"Removing {len(context.config.remove_packages_nodeps)} packages (no deps)…"):
+        try:
+            context.config.distribution.installer.package_manager(context.config).remove_nodeps(
+                context, context.config.remove_packages_nodeps
+            )
+        except NotImplementedError:
+            die(f"Removing packages without deps is not supported for {context.config.distribution}")
+
+
 def check_root_populated(context: Context) -> None:
     if (
         context.config.output_format == OutputFormat.none
@@ -4072,6 +4087,7 @@ def build_image(context: Context) -> None:
         stub, kver, kimg, microcode = save_esp_components(context)
 
         remove_packages(context)
+        remove_packages_nodeps(context)
 
         if manifest:
             manifest.record_packages()
