@@ -2094,6 +2094,7 @@ class Config:
     seed: uuid.UUID
 
     packages: list[str]
+    packages_nodeps: list[str]
     build_packages: list[str]
     volatile_packages: list[str]
     package_directories: list[Path]
@@ -3037,6 +3038,15 @@ SETTINGS: list[ConfigSetting[Any]] = [
         parse=config_make_list_parser(delimiter=",", key=package_sort_key),
         help="Add an additional package to the OS image",
         tools=True,
+    ),
+    ConfigSetting(
+        dest="packages_nodeps",
+        name="PackagesNoDeps",
+        long="--package-nodeps",
+        metavar="PACKAGE",
+        section="Content",
+        parse=config_make_list_parser(delimiter=","),
+        help="Install packages without dependency resolution (dnf download + rpm --install --nodeps)",
     ),
     ConfigSetting(
         dest="build_packages",
@@ -5782,6 +5792,7 @@ def summary(config: Config) -> str:
 
     {bold("CONTENT")}:
                            Packages: {line_join_list(config.packages)}
+              Packages (no deps): {line_join_list(config.packages_nodeps)}
                      Build Packages: {line_join_list(config.build_packages)}
                   Volatile Packages: {line_join_list(config.volatile_packages)}
                 Package Directories: {line_join_list(config.package_directories)}

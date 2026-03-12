@@ -302,6 +302,8 @@ def install_distribution(context: Context) -> None:
             if context.config.packages:
                 context.config.distribution.installer.install_packages(context, context.config.packages)
 
+            install_packages_nodeps(context)
+
     for f in (
         "var/lib/systemd/random-seed",
         "var/lib/systemd/credential.secret",
@@ -352,6 +354,21 @@ def remove_packages(context: Context) -> None:
             )
         except NotImplementedError:
             die(f"Removing packages is not supported for {context.config.distribution}")
+
+
+def install_packages_nodeps(context: Context) -> None:
+    """Install packages listed in config.packages_nodeps without dependency resolution"""
+
+    if not context.config.packages_nodeps:
+        return
+
+    with complete_step(f"Installing {len(context.config.packages_nodeps)} packages (no deps)…"):
+        try:
+            context.config.distribution.installer.package_manager(context.config).install_nodeps(
+                context, context.config.packages_nodeps
+            )
+        except NotImplementedError:
+            die(f"Installing packages without deps is not supported for {context.config.distribution}")
 
 
 def remove_packages_nodeps(context: Context) -> None:

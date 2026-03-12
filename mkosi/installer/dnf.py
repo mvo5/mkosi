@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
+import tempfile
 import textwrap
 from collections.abc import Sequence
 from pathlib import Path
@@ -260,6 +261,41 @@ class Dnf(PackageManager):
         arguments += [*packages]
 
         cls.invoke(context, "install", arguments, apivfs=apivfs)
+
+    @classmethod
+    def install_nodeps(cls, context: Context, packages: Sequence[str]) -> None:
+        with tempfile.TemporaryDirectory(prefix="mkosi-nodeps-") as tmp:
+            # Download RPMs using dnf download, restricting to the target architecture
+            # (plus noarch) to avoid pulling in multilib (i686) packages.
+            # We must bind-mount the temp dir writably into the sandbox so the downloads persist.
+            arch = cls.architecture(context)
+            run(
+                cls.cmd(context) + [
+                    "download", f"--destdir={tmp}", f"--arch={arch}", "--arch=noarch", *packages,
+                ],
+                sandbox=cls.sandbox(
+                    context,
+                    apivfs=False,
+                    options=["--bind", tmp, tmp],
+                ),
+                env=cls.finalize_environment(context),
+            )
+
+            # Install downloaded RPMs with rpm --upgrade --nodeps
+            # We use --upgrade instead of --install so that packages which are already installed
+            # (e.g. pulled in as dependencies by earlier dnf transactions) are skipped gracefully
+            # instead of failing the entire transaction.
+            rpms = list(Path(tmp).glob("*.rpm"))
+            if rpms:
+                run(
+                    [*rpm_cmd(), "--upgrade", "--nodeps", "--noscripts", "--force", *(f"/tmp/mkosi-nodeps/{p.name}" for p in rpms)],
+                    sandbox=cls.sandbox(
+                        context,
+                        apivfs=True,
+                        options=["--ro-bind", tmp, "/tmp/mkosi-nodeps"],
+                    ),
+                    env=cls.finalize_environment(context),
+                )
 
     @classmethod
     def remove(cls, context: Context, packages: Sequence[str]) -> None:
