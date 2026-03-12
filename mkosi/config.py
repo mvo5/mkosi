@@ -2098,6 +2098,7 @@ class Config:
     volatile_packages: list[str]
     package_directories: list[Path]
     volatile_package_directories: list[Path]
+    base_packages: bool
     with_recommends: bool
     with_docs: bool
 
@@ -3071,6 +3072,15 @@ SETTINGS: list[ConfigSetting[Any]] = [
         parse=config_make_list_parser(delimiter=",", parse=make_path_parser()),
         help="Specify a directory containing extra volatile packages",
         scope=SettingScope.universal,
+    ),
+    ConfigSetting(
+        dest="base_packages",
+        metavar="BOOL",
+        section="Content",
+        parse=config_parse_boolean,
+        default=True,
+        help="Install base distribution packages (e.g. basesystem, filesystem). "
+        "When disabled, only packages specified with Packages= are installed",
     ),
     ConfigSetting(
         dest="with_recommends",
@@ -5766,6 +5776,7 @@ def summary(config: Config) -> str:
                   Volatile Packages: {line_join_list(config.volatile_packages)}
                 Package Directories: {line_join_list(config.package_directories)}
        Volatile Package Directories: {line_join_list(config.volatile_package_directories)}
+                     Base Packages: {yes_no(config.base_packages)}
                  With Documentation: {yes_no(config.with_docs)}
 
                          Base Trees: {line_join_list(config.base_trees)}

@@ -269,7 +269,10 @@ def install_distribution(context: Context) -> None:
             return
 
         with complete_step(f"Installing {context.config.distribution.installer.pretty_name()}"):
-            context.config.distribution.installer.install(context)
+            if context.config.base_packages:
+                context.config.distribution.installer.install(context)
+            else:
+                context.config.distribution.installer.setup(context)
 
             if context.config.machine_id:
                 with umask(~0o755):
